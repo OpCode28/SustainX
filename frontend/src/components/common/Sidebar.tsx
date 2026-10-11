@@ -117,6 +117,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           allowedRoles: ['ADMIN', 'ESG_OFFICER', 'GROUP_SUSTAINABILITY', 'AUDITOR', 'SITE_USER']
         },
         {
+          name: 'Presentation Deck',
+          path: '/presentation',
+          icon: ShieldCheck,
+          allowedRoles: ['ADMIN', 'ESG_OFFICER', 'GROUP_SUSTAINABILITY', 'AUDITOR', 'SITE_USER'],
+          badge: '20'
+        },
+        {
           name: 'Settings',
           path: '/settings',
           icon: Settings,

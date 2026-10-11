@@ -16,6 +16,7 @@ import { AuditTrailPage } from './pages/AuditTrailPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { IndicatorsRegistryPage } from './pages/IndicatorsRegistryPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PresentationPage } from './pages/PresentationPage';
 
 // Protected Route Guard
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,6 +69,7 @@ export const App: React.FC = () => {
               <Route path="/audit-trail" element={<AuditTrailPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/indicators" element={<IndicatorsRegistryPage />} />
+              <Route path="/presentation" element={<PresentationPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
