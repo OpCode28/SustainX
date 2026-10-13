@@ -18,18 +18,19 @@ export const CorporateHeader: React.FC = () => {
   return (
     <header className="bg-white border-b border-[#E8E8E8] sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-        {/* Company Logo Top-Left */}
+        {/* Company Logo Top-Left: Official Full MEIL Logo */}
         <Link to="/corporate" className="flex items-center space-x-3 group">
-          {/* MEIL Red & Navy Emblem */}
-          <div className="w-12 h-12 bg-[#1A2A6C] border-2 border-[#EF272E] flex items-center justify-center text-white font-bold text-2xl tracking-tighter">
-            <span className="text-[#EF272E] font-black mr-0.5">M</span>EIL
-          </div>
-          <div className="flex flex-col">
+          <img
+            src="/MEIL_FULL_LOGO.jpg"
+            alt="MEIL Official Logo"
+            className="h-11 sm:h-12 w-auto object-contain block"
+          />
+          <div className="flex flex-col border-l-2 border-[#1A2A6C]/20 pl-3">
             <span className="text-xl font-black text-[#1A2A6C] tracking-tight leading-tight">
-              MEIL
+              MEIL OneSource
             </span>
-            <span className="text-[11px] text-[#444444] font-normal tracking-normal leading-tight">
-              Megha Engineering &amp; Infrastructures Ltd.
+            <span className="text-[11px] text-[#EF272E] font-bold tracking-normal leading-tight">
+              Central Source for ESG &amp; BRSR Reporting Ease
             </span>
           </div>
         </Link>
@@ -58,10 +59,10 @@ export const CorporateHeader: React.FC = () => {
           {/* ESG / BRSR Portal Access Button */}
           <Link
             to="/dashboard"
-            className="ml-3 bg-[#EF272E] hover:bg-[#1A2A6C] text-white px-3.5 py-1.5 text-[13px] font-bold transition-colors flex items-center space-x-1.5"
+            className="ml-3 bg-[#EF272E] hover:bg-[#1A2A6C] text-white px-4 py-2 text-[13px] font-bold transition-colors flex items-center space-x-1.5 shadow-sm"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>ESG / BRSR Portal</span>
+            <span>Enter MEIL OneSource</span>
           </Link>
         </nav>
 
@@ -108,7 +109,7 @@ export const CorporateHeader: React.FC = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="block py-2 text-[#EF272E] font-bold"
           >
-            → Enter ESG / BRSR Reporting Portal
+            → Enter MEIL OneSource (ESG &amp; BRSR)
           </Link>
         </div>
       )}

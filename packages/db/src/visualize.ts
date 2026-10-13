@@ -1,0 +1,915 @@
+import { sqlClient } from './client';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as http from 'http';
+import * as os from 'os';
+
+interface TableNode {
+  name: string;
+  rowCount: number;
+  columns: { name: string; type: string; isPk: boolean; isFk: boolean }[];
+  category: string;
+}
+
+interface ForeignKeyEdge {
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+  constraintName: string;
+}
+
+async function run() {
+  console.log('🔍 Analyzing PostgreSQL 17 schema and live foreign key topology...');
+
+  // 1. Fetch all public tables
+  const tablesResult = await sqlClient`
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    ORDER BY table_name;
+  `;
+
+  const tableNames = tablesResult.map((r: any) => r.table_name);
+
+  // 2. Fetch all foreign keys
+  const fksResult = await sqlClient`
+    SELECT
+      tc.table_name AS from_table,
+      kcu.column_name AS from_column,
+      ccu.table_name AS to_table,
+      ccu.column_name AS to_column,
+      tc.constraint_name
+    FROM information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public';
+  `;
+
+  const edges: ForeignKeyEdge[] = fksResult.map((r: any) => ({
+    fromTable: r.from_table,
+    fromColumn: r.from_column,
+    toTable: r.to_table,
+    toColumn: r.to_column,
+    constraintName: r.constraint_name,
+  }));
+
+  // 3. Fetch primary keys
+  const pksResult = await sqlClient`
+    SELECT
+      tc.table_name,
+      kcu.column_name
+    FROM information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public';
+  `;
+
+  const pksMap = new Set<string>();
+  pksResult.forEach((r: any) => pksMap.add(`${r.table_name}.${r.column_name}`));
+
+  // 4. Fetch columns and row counts for each table
+  const nodes: TableNode[] = [];
+
+  for (const tName of tableNames) {
+    // Row count
+    let count = 0;
+    try {
+      const countRes = await sqlClient.unsafe(`SELECT count(*) FROM "${tName}"`);
+      count = parseInt(countRes[0].count);
+    } catch {
+      count = 0;
+    }
+
+    // Columns
+    const colsRes = await sqlClient`
+      SELECT column_name, data_type, character_maximum_length, udt_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = ${tName}
+      ORDER BY ordinal_position;
+    `;
+
+    const cols = colsRes.map((c: any) => {
+      const isPk = pksMap.has(`${tName}.${c.column_name}`);
+      const isFk = edges.some(e => e.fromTable === tName && e.fromColumn === c.column_name);
+      return {
+        name: c.column_name,
+        type: c.udt_name || c.data_type,
+        isPk,
+        isFk,
+      };
+    });
+
+    let category = 'Config & Standards';
+    if (['organisations', 'department', 'users'].includes(tName)) category = 'Corporate Governance';
+    else if (['activity_data', 'calculation_results', 'evidence'].includes(tName)) category = 'Statutory Metrics Pipeline';
+    else if (tName === 'audit_logs') category = 'Assurance Ledger';
+
+    nodes.push({
+      name: tName,
+      rowCount: count,
+      columns: cols,
+      category,
+    });
+  }
+
+  // 5. Output Console ASCII Dependency Tree
+  console.log('\n========================================================================');
+  console.log('🌳 POSTGRESQL 17 ENTITY RELATIONSHIP TREE & FOREIGN KEY TOPOLOGY');
+  console.log('========================================================================\n');
+
+  console.log('🏢 organisations (Corporate Root)');
+  console.log('   ├── 🔄 organisations (self-ref: parent_id -> id)');
+  console.log('   ├── 👥 users (organisation_id -> organisations.id)');
+  console.log('   ├── 🏛️ department (organisation_id -> organisations.id)');
+  console.log('   ├── 📊 calculation_results (organisation_id -> organisations.id)');
+  console.log('   └── ⚡ activity_data (organisation_id -> organisations.id)');
+  console.log('         ├── 📅 reporting_periods (reporting_period_id -> reporting_periods.id)');
+  console.log('         ├── 🏛️ department (department_id -> department.id)');
+  console.log('         ├── 🎯 indicator (indicator_id -> indicator.id)');
+  console.log('         └── 📎 evidence (activity_data_id -> activity_data.id)');
+  console.log('\n⚙️ Reference Masters (Independent):');
+  console.log('   └── 🌿 emission_factors (CEA Grid v20.0, DEFRA fuels)');
+  console.log('\n🛡️ Kernel Immutability (Universally Audited Target):');
+  console.log('   └── 🔒 audit_logs (Captured via audit_row() trigger, Protected: Append-Only)');
+  console.log('\n------------------------------------------------------------------------');
+  console.log(`📊 Summary: ${nodes.length} Tables | ${edges.length} Foreign Key Constraints | PostgreSQL 17`);
+  console.log('------------------------------------------------------------------------\n');
+
+  // 6. Generate Standalone Interactive Graph & Tree HTML file
+  const htmlContent = generateVisualizerHtml(nodes, edges);
+  const outPath = path.resolve(__dirname, '../erd-visualizer.html');
+  fs.writeFileSync(outPath, htmlContent, 'utf-8');
+
+  console.log(`✅ Interactive ERD Graph & Tree Visualizer generated at:`);
+  console.log(`   file:///${outPath.replace(/\\/g, '/')}\n`);
+
+  // 7. Start lightweight local dev server to view the diagram live
+  const PORT = 4999;
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmlContent);
+  });
+
+  const getWifiIp = (): string => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      if (name.toLowerCase().includes('vmnet') || name.toLowerCase().includes('virtual')) continue;
+      for (const iface of interfaces[name] || []) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return '127.0.0.1';
+  };
+
+  const wifiIp = getWifiIp();
+
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Live Backend Visualizer running at:`);
+    console.log(`   - Localhost: http://localhost:${PORT}`);
+    console.log(`   - Local Wi-Fi Network: http://${wifiIp}:${PORT}`);
+    console.log(`   (Supports Interactive Force Graph, Hierarchical Tree Layout, and Schema Inspector)\n`);
+  });
+}
+
+function generateVisualizerHtml(nodes: TableNode[], edges: ForeignKeyEdge[]): string {
+  const serializedNodes = JSON.stringify(nodes);
+  const serializedEdges = JSON.stringify(edges);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SustainX PostgreSQL 17 Database ERD Graph &amp; Tree Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #090d16;
+      color: #f1f5f9;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 20;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      background: linear-gradient(135deg, #EF272E, #b91c1c);
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(239, 39, 46, 0.4);
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover {
+      background: #334155;
+      border-color: #475569;
+      color: white;
+    }
+    button.active {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: white;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.4);
+    }
+    main {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+    #canvas-container {
+      flex: 1;
+      height: 100%;
+      background: radial-gradient(#1e293b 1.5px, #090d16 1.5px);
+      background-size: 28px 28px;
+      cursor: grab;
+      position: relative;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+    svg#svg-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #sidebar {
+      width: 380px;
+      background: #0f172a;
+      border-left: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    .sidebar-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .table-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .table-name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .row-badge {
+      font-size: 11px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #cbd5e1;
+    }
+    .col-list {
+      margin-top: 12px;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      border-top: 1px solid #334155;
+      padding-top: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .col-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #1e293b;
+    }
+    .pk { color: #f59e0b; font-weight: bold; background: rgba(245, 158, 11, 0.15); padding: 1px 4px; border-radius: 3px; }
+    .fk { color: #38bdf8; font-weight: bold; background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 3px; }
+    .type { color: #94a3b8; }
+    .legend-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid #334155;
+      padding: 10px 16px;
+      border-radius: 8px;
+      display: flex;
+      gap: 18px;
+      font-size: 12px;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+    .mini-help {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #1e293b;
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #94a3b8;
+      pointer-events: none;
+      z-index: 5;
+    }
+    /* SVG Node Styles */
+    .node-group {
+      cursor: grab;
+      transition: filter 0.15s;
+    }
+    .node-group:hover {
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.4));
+    }
+    .node-group.active {
+      filter: drop-shadow(0 0 14px rgba(37, 99, 235, 0.8));
+    }
+    .edge-path {
+      fill: none;
+      stroke: #475569;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      transition: stroke 0.15s, stroke-width 0.15s;
+    }
+    .edge-path:hover, .edge-path.highlight {
+      stroke: #38bdf8;
+      stroke-width: 3.5;
+    }
+    .edge-label-pill {
+      font-family: ui-monospace, monospace;
+      font-size: 10px;
+      fill: #cbd5e1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="badge">SustainX Dev Visualizer</span>
+      <h1>PostgreSQL 17 Database Graph &amp; Tree Topology</h1>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>Connected to sustainx_db</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnTree" class="active" onclick="setLayout('tree')">🌳 Tree / Hierarchical View</button>
+      <button id="btnGraph" onclick="setLayout('graph')">🕸️ Network Graph View</button>
+      <button onclick="resetZoom()">🔍 Reset View</button>
+      <button onclick="zoomBy(1.2)">➕ Zoom In</button>
+      <button onclick="zoomBy(0.8)">➖ Zoom Out</button>
+      <a href="https://local.drizzle.studio" target="_blank" style="text-decoration:none;">
+        <button style="background:#1A2A6C; border-color:#2563eb;">⚡ Open Drizzle Studio</button>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <div class="mini-help">
+      💡 Drag nodes to rearrange • Scroll to zoom • Click a table to inspect columns &amp; relations
+    </div>
+
+    <div id="canvas-container">
+      <svg id="svg-canvas">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+          </marker>
+          <filter id="card-shadow" x="-10%" y="-10%" width="125%" height="125%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5" />
+          </filter>
+        </defs>
+        <g id="viewport">
+          <g id="edges-layer"></g>
+          <g id="nodes-layer"></g>
+        </g>
+      </svg>
+    </div>
+
+    <aside id="sidebar">
+      <div class="sidebar-title">Table Inspector</div>
+      <div id="inspectorContent">
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+          👈 Click on any table node in the diagram to inspect its schema, column types, primary key, row count, and foreign key relationships.
+        </p>
+      </div>
+    </aside>
+
+    <div class="legend-bar">
+      <div class="legend-item"><span class="dot" style="background:#2563eb;"></span> Corporate Governance</div>
+      <div class="legend-item"><span class="dot" style="background:#059669;"></span> Statutory Metrics</div>
+      <div class="legend-item"><span class="dot" style="background:#d97706;"></span> Standards &amp; Factors</div>
+      <div class="legend-item"><span class="dot" style="background:#EF272E;"></span> Assurance Ledger</div>
+    </div>
+  </main>
+
+  <script>
+    const tablesData = ${serializedNodes};
+    const relationsData = ${serializedEdges};
+
+    // Card dimensions
+    const CARD_W = 260;
+    const HEADER_H = 40;
+    const ROW_H = 22;
+    const MAX_VISIBLE_COLS = 5;
+
+    // Viewport transform (Pan & Zoom)
+    let panX = 60;
+    let panY = 60;
+    let scale = 0.85;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    // Node layout positions
+    const nodePositions = {};
+    let selectedTable = null;
+    let draggingNodeId = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    const viewport = document.getElementById('viewport');
+    const nodesLayer = document.getElementById('nodes-layer');
+    const edgesLayer = document.getElementById('edges-layer');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const container = document.getElementById('canvas-container');
+
+    function getTableHeight(table) {
+      const shownCols = Math.min(table.columns.length, MAX_VISIBLE_COLS);
+      const extraHeight = table.columns.length > MAX_VISIBLE_COLS ? 24 : 0;
+      return HEADER_H + (shownCols * ROW_H) + extraHeight + 12;
+    }
+
+    function initLayout(mode) {
+      const width = container.clientWidth || 1200;
+      
+      if (mode === 'tree') {
+        // Hierarchical Tree Placement (Up to Down)
+        // Level 0: Corporate Root
+        nodePositions['organisations'] = { x: 500, y: 60 };
+
+        // Level 1: Direct Corporate Branches
+        nodePositions['department'] = { x: 120, y: 320 };
+        nodePositions['users'] = { x: 440, y: 320 };
+        nodePositions['calculation_results'] = { x: 760, y: 320 };
+        nodePositions['activity_data'] = { x: 1080, y: 320 };
+
+        // Level 2: Children & Dependencies
+        nodePositions['evidence'] = { x: 1080, y: 620 };
+        nodePositions['indicator'] = { x: 760, y: 620 };
+        nodePositions['reporting_periods'] = { x: 440, y: 620 };
+
+        // Reference Masters & Audit Sink
+        nodePositions['emission_factors'] = { x: 120, y: 620 };
+        nodePositions['audit_logs'] = { x: 1400, y: 320 };
+
+        panX = 60;
+        panY = 40;
+        scale = 0.75;
+      } else {
+        // Network Circular Graph Placement
+        const centerX = 750;
+        const centerY = 450;
+        const radius = 380;
+        const total = tablesData.length;
+
+        tablesData.forEach((t, i) => {
+          if (t.name === 'organisations') {
+            nodePositions[t.name] = { x: centerX - CARD_W/2, y: centerY - 100 };
+          } else {
+            const angle = ((i) / (total - 1)) * 2 * Math.PI;
+            nodePositions[t.name] = {
+              x: centerX + Math.cos(angle) * radius - CARD_W/2,
+              y: centerY + Math.sin(angle) * (radius * 0.75) - 60
+            };
+          }
+        });
+
+        panX = 60;
+        panY = 40;
+        scale = 0.75;
+      }
+
+      updateViewport();
+      renderAll();
+    }
+
+    function updateViewport() {
+      viewport.setAttribute('transform', \`translate(\${panX}, \${panY}) scale(\${scale})\`);
+    }
+
+    function resetZoom() {
+      panX = 60;
+      panY = 40;
+      scale = 0.75;
+      updateViewport();
+    }
+
+    function zoomBy(factor) {
+      scale = Math.min(Math.max(scale * factor, 0.25), 2.5);
+      updateViewport();
+    }
+
+    function setLayout(mode) {
+      document.getElementById('btnTree').classList.toggle('active', mode === 'tree');
+      document.getElementById('btnGraph').classList.toggle('active', mode === 'graph');
+      initLayout(mode);
+    }
+
+    function renderAll() {
+      renderNodes();
+      renderEdges();
+    }
+
+    function getCategoryColor(cat) {
+      if (cat === 'Corporate Governance') return '#2563eb';
+      if (cat === 'Statutory Metrics Pipeline') return '#059669';
+      if (cat === 'Config & Standards') return '#d97706';
+      if (cat === 'Assurance Ledger') return '#EF272E';
+      return '#64748b';
+    }
+
+    function renderNodes() {
+      nodesLayer.innerHTML = '';
+
+      tablesData.forEach(t => {
+        const pos = nodePositions[t.name] || { x: 100, y: 100 };
+        const cardH = getTableHeight(t);
+        const headerColor = getCategoryColor(t.category);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'node-group' + (selectedTable === t.name ? ' active' : ''));
+        g.setAttribute('data-id', t.name);
+        g.setAttribute('transform', \`translate(\${pos.x}, \${pos.y})\`);
+
+        // Card container
+        let svgHtml = \`
+          <rect width="\${CARD_W}" height="\${cardH}" rx="8" fill="#1e293b" stroke="\${selectedTable === t.name ? '#38bdf8' : '#334155'}" stroke-width="\${selectedTable === t.name ? '2.5' : '1.5'}" filter="url(#card-shadow)" />
+          
+          <!-- Header -->
+          <path d="M 0 8 Q 0 0 8 0 L \${CARD_W - 8} 0 Q \${CARD_W} 0 \${CARD_W} 8 L \${CARD_W} \${HEADER_H} L 0 \${HEADER_H} Z" fill="\${headerColor}" />
+          <text x="14" y="24" fill="#ffffff" font-size="13" font-weight="700" font-family="system-ui, sans-serif">\${t.name}</text>
+          
+          <!-- Row count pill -->
+          <rect x="\${CARD_W - 74}" y="10" width="60" height="20" rx="10" fill="rgba(0,0,0,0.35)" />
+          <text x="\${CARD_W - 44}" y="24" fill="#f8fafc" font-size="10" font-weight="600" text-anchor="middle" font-family="monospace">\${t.rowCount} rows</text>
+        \`;
+
+        // Columns
+        const shownCols = t.columns.slice(0, MAX_VISIBLE_COLS);
+        shownCols.forEach((col, idx) => {
+          const colY = HEADER_H + (idx * ROW_H) + 16;
+          let badge = '';
+          if (col.isPk) {
+            badge = \`<rect x="14" y="\${colY - 10}" width="22" height="13" rx="3" fill="#f59e0b" fill-opacity="0.2"/>
+                     <text x="25" y="\${colY}" fill="#f59e0b" font-size="9" font-weight="bold" font-family="monospace" text-anchor="middle">PK</text>\`;
+          } else if (col.isFk) {
+            badge = \`<rect x="14" y="\${colY - 10}" width="22" height="13" rx="3" fill="#38bdf8" fill-opacity="0.2"/>
+                     <text x="25" y="\${colY}" fill="#38bdf8" font-size="9" font-weight="bold" font-family="monospace" text-anchor="middle">FK</text>\`;
+          }
+
+          svgHtml += \`
+            \${badge}
+            <text x="\${(col.isPk || col.isFk) ? 42 : 14}" y="\${colY}" fill="#e2e8f0" font-size="11" font-family="monospace">\${col.name}</text>
+            <text x="\${CARD_W - 14}" y="\${colY}" fill="#94a3b8" font-size="10" font-family="monospace" text-anchor="end">\${col.type}</text>
+          \`;
+        });
+
+        if (t.columns.length > MAX_VISIBLE_COLS) {
+          const moreY = HEADER_H + (MAX_VISIBLE_COLS * ROW_H) + 14;
+          svgHtml += \`
+            <text x="\${CARD_W / 2}" y="\${moreY}" fill="#64748b" font-size="10" font-family="sans-serif" text-anchor="middle">+ \${t.columns.length - MAX_VISIBLE_COLS} more columns (click to inspect)</text>
+          \`;
+        }
+
+        g.innerHTML = svgHtml;
+
+        // Interaction
+        g.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          draggingNodeId = t.name;
+          const rect = container.getBoundingClientRect();
+          const mouseSvgX = (e.clientX - rect.left - panX) / scale;
+          const mouseSvgY = (e.clientY - rect.top - panY) / scale;
+          dragOffsetX = mouseSvgX - pos.x;
+          dragOffsetY = mouseSvgY - pos.y;
+          selectTable(t.name);
+        });
+
+        nodesLayer.appendChild(g);
+      });
+    }
+
+    function renderEdges() {
+      edgesLayer.innerHTML = '';
+
+      relationsData.forEach(rel => {
+        const fromPos = nodePositions[rel.fromTable];
+        const toPos = nodePositions[rel.toTable];
+        if (!fromPos || !toPos) return;
+
+        const fromTableObj = tablesData.find(t => t.name === rel.fromTable);
+        const toTableObj = tablesData.find(t => t.name === rel.toTable);
+
+        const fromH = fromTableObj ? getTableHeight(fromTableObj) : 100;
+        const toH = toTableObj ? getTableHeight(toTableObj) : 100;
+
+        // Self-referencing edge
+        if (rel.fromTable === rel.toTable) {
+          const x = fromPos.x + CARD_W;
+          const y = fromPos.y + 20;
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('class', 'edge-path');
+          path.setAttribute('d', \`M \${x} \${y} C \${x + 60} \${y - 40}, \${x + 60} \${y + 40}, \${x} \${y + 30}\`);
+          path.setAttribute('marker-end', 'url(#arrow)');
+          edgesLayer.appendChild(path);
+          return;
+        }
+
+        // Compute connection anchor points
+        let startX, startY, endX, endY;
+
+        // Determine best sides to connect
+        if (fromPos.y + fromH < toPos.y) {
+          // from is above to
+          startX = fromPos.x + CARD_W / 2;
+          startY = fromPos.y + fromH;
+          endX = toPos.x + CARD_W / 2;
+          endY = toPos.y;
+        } else if (fromPos.y > toPos.y + toH) {
+          // from is below to
+          startX = fromPos.x + CARD_W / 2;
+          startY = fromPos.y;
+          endX = toPos.x + CARD_W / 2;
+          endY = toPos.y + toH;
+        } else if (fromPos.x + CARD_W < toPos.x) {
+          // from is left of to
+          startX = fromPos.x + CARD_W;
+          startY = fromPos.y + fromH / 2;
+          endX = toPos.x;
+          endY = toPos.y + toH / 2;
+        } else {
+          // from is right of to
+          startX = fromPos.x;
+          startY = fromPos.y + fromH / 2;
+          endX = toPos.x + CARD_W;
+          endY = toPos.y + toH / 2;
+        }
+
+        const dx = (endX - startX) * 0.45;
+        const dy = (endY - startY) * 0.45;
+        const cx1 = startX + dx;
+        const cy1 = startY + dy;
+        const cx2 = endX - dx;
+        const cy2 = endY - dy;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'edge-path');
+        path.setAttribute('d', \`M \${startX} \${startY} C \${cx1} \${cy1}, \${cx2} \${cy2}, \${endX} \${endY}\`);
+        path.setAttribute('marker-end', 'url(#arrow)');
+
+        // Edge label pill at midpoint
+        const midX = (startX + endX) / 2;
+        const midY = (startY + endY) / 2;
+
+        const pillG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        pillG.innerHTML = \`
+          <rect x="\${midX - 55}" y="\${midY - 10}" width="110" height="18" rx="4" fill="#090d16" stroke="#334155" stroke-width="1" />
+          <text class="edge-label-pill" x="\${midX}" y="\${midY + 2}" text-anchor="middle">\${rel.fromColumn} ➔ \${rel.toColumn}</text>
+        \`;
+
+        edgesLayer.appendChild(path);
+        edgesLayer.appendChild(pillG);
+      });
+    }
+
+    function selectTable(tableName) {
+      selectedTable = tableName;
+      renderNodes();
+
+      const t = tablesData.find(item => item.name === tableName);
+      if (!t) return;
+
+      const incomingEdges = relationsData.filter(e => e.toTable === t.name);
+      const outgoingEdges = relationsData.filter(e => e.fromTable === t.name);
+
+      let html = \`
+        <div class="table-card">
+          <div class="table-name">
+            <span>\${t.name}</span>
+            <span class="row-badge">\${t.rowCount} rows</span>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Domain: \${t.category}</div>
+          <div class="col-list">
+      \`;
+
+      t.columns.forEach(c => {
+        let tag = '';
+        if (c.isPk) tag = '<span class="pk">PK</span> ';
+        if (c.isFk) tag += '<span class="fk">FK</span> ';
+
+        html += \`
+          <div class="col-item">
+            <span>\${tag}\${c.name}</span>
+            <span class="type">\${c.type}</span>
+          </div>
+        \`;
+      });
+
+      html += \`</div></div>\`;
+
+      if (outgoingEdges.length > 0) {
+        html += \`
+          <div style="margin-top: 14px;">
+            <div class="sidebar-title">Outgoing Foreign Keys (References)</div>
+        \`;
+        outgoingEdges.forEach(e => {
+          html += \`
+            <div style="font-size: 12px; background: #1e293b; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-family: monospace; border: 1px solid #334155;">
+              <strong style="color:#38bdf8;">\${e.fromColumn}</strong> ➔ \${e.toTable}.\${e.toColumn}
+              <div style="color: #94a3b8; font-size: 10px; margin-top: 4px;">Constraint: \${e.constraintName}</div>
+            </div>
+          \`;
+        });
+        html += \`</div>\`;
+      }
+
+      if (incomingEdges.length > 0) {
+        html += \`
+          <div style="margin-top: 14px;">
+            <div class="sidebar-title">Referenced By (Incoming FKs)</div>
+        \`;
+        incomingEdges.forEach(e => {
+          html += \`
+            <div style="font-size: 12px; background: #1e293b; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-family: monospace; border: 1px solid #334155;">
+              <span style="color:#38bdf8;">\${e.fromTable}</span> (\${e.fromColumn})
+              <div style="color: #94a3b8; font-size: 10px; margin-top: 4px;">via \${e.constraintName}</div>
+            </div>
+          \`;
+        });
+        html += \`</div>\`;
+      }
+
+      document.getElementById('inspectorContent').innerHTML = html;
+    }
+
+    // Canvas Mouse Events (Pan & Drag)
+    container.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.node-group')) return;
+      isPanning = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isPanning) {
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateViewport();
+      } else if (draggingNodeId) {
+        const rect = container.getBoundingClientRect();
+        const mouseSvgX = (e.clientX - rect.left - panX) / scale;
+        const mouseSvgY = (e.clientY - rect.top - panY) / scale;
+        nodePositions[draggingNodeId] = {
+          x: mouseSvgX - dragOffsetX,
+          y: mouseSvgY - dragOffsetY
+        };
+
+        const nodeEl = document.querySelector(\`[data-id="\${draggingNodeId}"]\`);
+        if (nodeEl) {
+          nodeEl.setAttribute('transform', \`translate(\${nodePositions[draggingNodeId].x}, \${nodePositions[draggingNodeId].y})\`);
+        }
+        renderEdges();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanning = false;
+      draggingNodeId = null;
+    });
+
+    // Mouse Wheel Zoom
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const newScale = Math.min(Math.max(scale * zoomFactor, 0.25), 2.5);
+      
+      panX = mouseX - (mouseX - panX) * (newScale / scale);
+      panY = mouseY - (mouseY - panY) * (newScale / scale);
+      scale = newScale;
+
+      updateViewport();
+    });
+
+    // Start with Tree Layout
+    initLayout('tree');
+    // Pre-select organisations root
+    selectTable('organisations');
+  </script>
+</body>
+</html>
+  `;
+}
+
+run().catch(err => {
+  console.error('Error during schema topology generation:', err);
+  process.exit(1);
+});

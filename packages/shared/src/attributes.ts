@@ -1,0 +1,194 @@
+export interface BRSRCoreAttributeItem {
+  id: string;
+  name: string;
+  sourceRecord: string; // The specific document it usually comes from
+  unit: string;
+}
+
+export interface BRSRCoreAttribute {
+  attributeNumber: number;
+  title: string;
+  description: string;
+  scalingMethod: string;
+  dataItems: BRSRCoreAttributeItem[];
+  scope3Categories?: { number: number; name: string; sourceRecord: string }[];
+}
+
+export const BRSR_CORE_ATTRIBUTES: BRSRCoreAttribute[] = [
+  {
+    attributeNumber: 1,
+    title: 'GHG Footprint',
+    description: 'Scope 1 direct emissions, Scope 2 purchased energy, and Scope 3 value chain indirect emissions.',
+    scalingMethod: 'Total Scope 1 + Scope 2 emissions (tCO2e) divided by turnover (₹ Crores) to compute GHG intensity.',
+    dataItems: [
+      {
+        id: 'ghg-scope1-stationary',
+        name: 'Scope 1 Stationary Combustion (DG sets, boilers, furnaces)',
+        sourceRecord: 'Fuel purchase invoices and consumption logs for diesel, coal, natural gas or LPG.',
+        unit: 'liters / kg / scm',
+      },
+      {
+        id: 'ghg-scope1-mobile',
+        name: 'Scope 1 Mobile Combustion (Company vehicles, forklifts)',
+        sourceRecord: 'Fuel card statements and vehicle logbooks.',
+        unit: 'liters',
+      },
+      {
+        id: 'ghg-scope1-process',
+        name: 'Scope 1 Process Emissions (Cement, steel, chemicals)',
+        sourceRecord: 'Production quantity records.',
+        unit: 'metric tonnes',
+      },
+      {
+        id: 'ghg-scope1-fugitive',
+        name: 'Scope 1 Fugitive Emissions (AC and chiller refrigerant top-ups, gas leaks)',
+        sourceRecord: 'HVAC maintenance and service records.',
+        unit: 'kg refrigerant',
+      },
+      {
+        id: 'ghg-scope2-grid',
+        name: 'Scope 2 Purchased Electricity (Grid electricity)',
+        sourceRecord: 'Utility electricity bills and calibrated meter readings.',
+        unit: 'kWh',
+      },
+      {
+        id: 'ghg-scope2-thermal',
+        name: 'Scope 2 Purchased Steam, Heat or Cooling',
+        sourceRecord: 'Supplier invoices and steam meter logs.',
+        unit: 'GJ / MWh',
+      },
+    ],
+    scope3Categories: [
+      { number: 1, name: 'Purchased goods and services', sourceRecord: 'Purchase ledger (spend or quantity), supplier-specific data.' },
+      { number: 2, name: 'Capital goods', sourceRecord: 'Fixed asset register, capex invoices.' },
+      { number: 3, name: 'Fuel- and energy-related activities', sourceRecord: 'Derived from fuel and electricity use (upstream and T&D losses).' },
+      { number: 4, name: 'Upstream transportation and distribution', sourceRecord: 'Freight invoices, logistics provider reports (tonne-km).' },
+      { number: 5, name: 'Waste generated in operations', sourceRecord: 'Waste registers, recycler manifests.' },
+      { number: 6, name: 'Business travel', sourceRecord: 'Travel agency data, expense reports (flights, hotels, taxis).' },
+      { number: 7, name: 'Employee commuting', sourceRecord: 'HR commute survey, shuttle or bus records.' },
+      { number: 8, name: 'Upstream leased assets', sourceRecord: 'Lease agreements, landlord utility data.' },
+      { number: 9, name: 'Downstream transportation and distribution', sourceRecord: 'Dispatch records, distributor freight data.' },
+      { number: 10, name: 'Processing of sold products', sourceRecord: 'Customer or intermediate-processor data.' },
+      { number: 11, name: 'Use of sold products', sourceRecord: 'Product energy specs × units sold × expected lifetime.' },
+      { number: 12, name: 'End-of-life treatment of sold products', sourceRecord: 'Product weights × disposal method.' },
+      { number: 13, name: 'Downstream leased assets', sourceRecord: 'Records of assets leased out.' },
+      { number: 14, name: 'Franchises', sourceRecord: 'Franchisee energy and fuel data.' },
+      { number: 15, name: 'Investments', sourceRecord: 'Investee company emissions (mainly financial institutions).' },
+    ],
+  },
+  {
+    attributeNumber: 2,
+    title: 'Water Footprint',
+    description: 'Total water withdrawal, discharge, treatment level, and net water consumption.',
+    scalingMethod: 'Water consumption (KL) divided by turnover (₹ Crores) to compute water intensity.',
+    dataItems: [
+      {
+        id: 'water-withdrawal',
+        name: 'Water Withdrawal by Source (Surface water, groundwater, municipal, tankers, rainwater)',
+        sourceRecord: 'Calibrated meter readings, municipal bills, tanker invoices, borewell logs.',
+        unit: 'Kiloliters (KL)',
+      },
+      {
+        id: 'water-discharge',
+        name: 'Water Discharge by Destination (Surface water, groundwater, third party)',
+        sourceRecord: 'Discharge flow meter logs.',
+        unit: 'Kiloliters (KL)',
+      },
+      {
+        id: 'water-treatment',
+        name: 'Treatment Level (None, primary, secondary or tertiary)',
+        sourceRecord: 'STP/ETP logs and certified effluent test reports.',
+        unit: 'category',
+      },
+      {
+        id: 'water-consumption',
+        name: 'Net Water Consumption (Calculated: Withdrawal minus Discharge)',
+        sourceRecord: 'Calculated mathematical balance.',
+        unit: 'Kiloliters (KL)',
+      },
+    ],
+  },
+  {
+    attributeNumber: 3,
+    title: 'Energy Footprint',
+    description: 'Total energy consumed from grid, renewable sources, and fuels converted to GJ.',
+    scalingMethod: 'Renewable energy divided by total energy gives Renewable Share (%). Total GJ divided by turnover gives Energy Intensity.',
+    dataItems: [
+      { id: 'energy-grid', name: 'Grid Electricity Consumption', sourceRecord: 'Utility electricity bills.', unit: 'kWh / GJ' },
+      { id: 'energy-renewable', name: 'Renewable Electricity (Solar, Wind, PPA)', sourceRecord: 'Solar/wind meter readings and PPA invoices.', unit: 'kWh / GJ' },
+      { id: 'energy-fuels', name: 'Fuels Consumed (Diesel, petrol, coal, gas, biomass converted via calorific values to GJ)', sourceRecord: 'Fuel purchase records.', unit: 'GJ' },
+      { id: 'energy-share', name: 'Renewable Energy Share (%)', sourceRecord: 'Calculated: Renewable energy divided by total energy.', unit: 'percentage' },
+    ],
+  },
+  {
+    attributeNumber: 4,
+    title: 'Embracing Circularity',
+    description: 'Waste generation by type, recovery rates, and hazardous disposal.',
+    scalingMethod: 'Waste generated (metric tonnes) divided by turnover (₹ Crores). Recycled share percentage.',
+    dataItems: [
+      { id: 'waste-generated', name: 'Waste Generated by Type (Plastic, e-waste, C&D, batteries, hazardous, non-hazardous)', sourceRecord: 'Waste registers and weighbridge slips.', unit: 'Metric Tonnes (MT)' },
+      { id: 'waste-recovered', name: 'Recovered Waste (Recycled, reused, other recovery)', sourceRecord: 'Recycler invoices, certificates and EPR records.', unit: 'Metric Tonnes (MT)' },
+      { id: 'waste-disposed', name: 'Disposed Waste (Incineration, landfill, other)', sourceRecord: 'Hazardous waste manifests and disposal facility receipts.', unit: 'Metric Tonnes (MT)' },
+    ],
+  },
+  {
+    attributeNumber: 5,
+    title: 'Employee Wellbeing & Safety',
+    description: 'Spend on health/accident insurance, safety training, hours worked, and incident rates.',
+    scalingMethod: 'Wellbeing spend divided by total revenue gives spend %. Lost-time injury frequency rate (LTIFR).',
+    dataItems: [
+      { id: 'safety-wellbeing-spend', name: 'Wellbeing Spend (Insurance, benefits, check-ups, safety PPE & training)', sourceRecord: 'HR and finance ledgers.', unit: 'INR' },
+      { id: 'safety-hours-worked', name: 'Hours Worked', sourceRecord: 'Attendance and biometric payroll records.', unit: 'person-hours' },
+      { id: 'safety-lost-time-injuries', name: 'Lost-Time Injuries (LTIs)', sourceRecord: 'Incident and accident register.', unit: 'count' },
+      { id: 'safety-fatalities', name: 'Fatalities & Permanent Disabilities (Split: Employees vs Workers)', sourceRecord: 'Statutory incident reports and medical records.', unit: 'count' },
+    ],
+  },
+  {
+    attributeNumber: 6,
+    title: 'Gender Diversity',
+    description: 'Gender pay parity, female representation, and POSH complaint resolution.',
+    scalingMethod: 'Female wages divided by total wages. POSH resolution percentage.',
+    dataItems: [
+      { id: 'gender-female-wages', name: 'Wages Paid to Female Employees & Workers', sourceRecord: 'Payroll register segregated by gender.', unit: 'INR' },
+      { id: 'gender-total-wages', name: 'Total Wages Paid', sourceRecord: 'Consolidated payroll register.', unit: 'INR' },
+      { id: 'gender-posh-complaints', name: 'POSH Complaints (Received, resolved, pending beyond 90 days)', sourceRecord: 'Internal Complaints Committee (ICC) register.', unit: 'count' },
+      { id: 'gender-female-headcount', name: 'Female Headcount & Representation', sourceRecord: 'HR master database.', unit: 'headcount / %' },
+    ],
+  },
+  {
+    attributeNumber: 7,
+    title: 'Inclusive Development',
+    description: 'Sourcing from MSMEs, domestic procurement, and smaller town wage distribution.',
+    scalingMethod: 'MSME spend divided by total purchases. Domestic sourcing percentage.',
+    dataItems: [
+      { id: 'inclusive-msme-purchases', name: 'Purchases from MSMEs and Small Producers', sourceRecord: 'Vendor master with verified Udyam registration and purchase ledger.', unit: 'INR' },
+      { id: 'inclusive-domestic-sourced', name: 'Purchases Sourced Within India vs Imports', sourceRecord: 'Vendor location, GST records and customs import records.', unit: 'INR / %' },
+      { id: 'inclusive-total-purchases', name: 'Total Procurement Base', sourceRecord: 'Consolidated purchase ledger.', unit: 'INR' },
+      { id: 'inclusive-smaller-towns', name: 'Wages Paid in Smaller Towns (As defined in SEBI guidance)', sourceRecord: 'Payroll by project work location.', unit: 'INR' },
+    ],
+  },
+  {
+    attributeNumber: 8,
+    title: 'Fairness to Customers & Suppliers',
+    description: 'Trading house concentration, distributor concentration, and accounts payable turnaround days.',
+    scalingMethod: 'Payable-days formula: (Accounts Payable / Cost of Procurement) × 365. Trading house share %.',
+    dataItems: [
+      { id: 'fairness-accounts-payable', name: 'Accounts Payable', sourceRecord: 'Payables ledger or balance sheet.', unit: 'INR' },
+      { id: 'fairness-procurement-cost', name: 'Cost of Goods & Services Procured', sourceRecord: 'Purchase ledger for payable-days formula.', unit: 'INR' },
+      { id: 'fairness-supplier-concentration', name: 'Purchases by Supplier (Share going to top trading houses)', sourceRecord: 'Vendor-wise ledger.', unit: 'INR / %' },
+      { id: 'fairness-customer-concentration', name: 'Sales by Customer (Share going to top dealers or distributors)', sourceRecord: 'Customer- or dealer-wise ledger.', unit: 'INR / %' },
+    ],
+  },
+  {
+    attributeNumber: 9,
+    title: 'Openness of Business',
+    description: 'Transparency in related party transactions, loans, investments, and Ind AS 24 disclosures.',
+    scalingMethod: 'Related party transactions divided by total balance sheet base figures.',
+    dataItems: [
+      { id: 'openness-rpt-loans', name: 'Loans and Advances to Related Parties', sourceRecord: 'Loan register.', unit: 'INR' },
+      { id: 'openness-rpt-investments', name: 'Investments in Related Parties', sourceRecord: 'Investment ledger.', unit: 'INR' },
+      { id: 'openness-rpt-trade', name: 'Purchases and Sales with Related Parties', sourceRecord: 'RPT register and Ind AS 24 statutory disclosures.', unit: 'INR' },
+      { id: 'openness-base-totals', name: 'Total Financial Statement Base Figures', sourceRecord: 'Audited statutory financial statements.', unit: 'INR' },
+    ],
+  },
+];

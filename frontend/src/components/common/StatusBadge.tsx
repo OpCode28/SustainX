@@ -2,7 +2,7 @@ import React from 'react';
 import { EntryStatus } from '../../types';
 
 interface StatusBadgeProps {
-  status: EntryStatus | 'OPEN' | 'CLOSED' | 'HEALTHY' | 'NEEDS_ATTENTION' | 'CRITICAL' | 'VERIFIED' | 'PENDING' | 'FLAGGED';
+  status: EntryStatus | 'OPEN' | 'CLOSED' | 'HEALTHY' | 'NEEDS_ATTENTION' | 'CRITICAL' | 'VERIFIED' | 'PENDING' | 'FLAGGED' | 'ON_TRACK';
   size?: 'sm' | 'md';
 }
 
@@ -14,12 +14,43 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
   let label: string = status;
 
   switch (status) {
+    case 'PROJECT_APPROVED':
+      badgeStyle = 'bg-blue-50 text-blue-800 border-blue-200';
+      dotColor = 'bg-blue-600';
+      label = 'Project Approved';
+      break;
+
+    case 'BU_APPROVED':
+      badgeStyle = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+      dotColor = 'bg-indigo-600';
+      label = 'BU Approved';
+      break;
+
+    case 'SUBSIDIARY_APPROVED':
+      badgeStyle = 'bg-teal-50 text-teal-800 border-teal-200';
+      dotColor = 'bg-teal-600';
+      label = 'Sub Approved';
+      break;
+
+    case 'GROUP_APPROVED':
+      badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200';
+      dotColor = 'bg-purple-600';
+      label = 'Group Approved';
+      break;
+
+    case 'LOCKED':
+      badgeStyle = 'bg-slate-900 text-amber-300 border-amber-400';
+      dotColor = 'bg-amber-400';
+      label = '🔒 Locked & Signed';
+      break;
+
     case 'APPROVED':
     case 'HEALTHY':
     case 'VERIFIED':
+    case 'ON_TRACK':
       badgeStyle = 'bg-[#f0fdf4] text-[#166534] border-[#bbf7d0]';
       dotColor = 'bg-[#16a34a]';
-      label = status === 'APPROVED' ? 'Approved' : status === 'HEALTHY' ? 'Healthy' : 'Verified';
+      label = status === 'APPROVED' ? 'Approved' : status === 'HEALTHY' ? 'Healthy' : status === 'ON_TRACK' ? 'On Track' : 'Verified';
       break;
 
     case 'SUBMITTED':

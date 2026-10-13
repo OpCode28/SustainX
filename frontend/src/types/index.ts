@@ -1,9 +1,20 @@
 export type RoleType = 
+  // 10 Statutory Roles:
+  | 'SYS_ADMIN'
+  | 'GROUP_ESG_HEAD'
+  | 'GROUP_FUNCTION'
+  | 'BOARD_APPROVER'
+  | 'SUB_ESG_MANAGER'
+  | 'BU_COORDINATOR'
+  | 'PROJECT_MANAGER'
+  | 'SITE_ENGINEER'
+  | 'SITE_EHS'
+  | 'AUDITOR'
+  // Legacy aliases for backward compatibility:
   | 'ADMIN'
   | 'SITE_USER'
   | 'ESG_OFFICER'
-  | 'GROUP_SUSTAINABILITY'
-  | 'AUDITOR';
+  | 'GROUP_SUSTAINABILITY';
 
 export interface Role {
   id: RoleType;
@@ -11,14 +22,22 @@ export interface Role {
   description: string;
 }
 
+export interface UserRoleBinding {
+  role: RoleType;
+  nodeId: string;
+  nodeName?: string;
+}
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   roleId: RoleType;
+  roles?: UserRoleBinding[];
   organisationId: string;
   organisationName: string;
   avatarUrl?: string;
+  allowedOrgIds?: string[];
 }
 
 export type OrgType = 'GROUP' | 'SUBSIDIARY' | 'BUSINESS_UNIT' | 'PROJECT';
@@ -35,6 +54,11 @@ export interface Organisation {
   city?: string;
   completionRate?: number;
   status?: 'HEALTHY' | 'NEEDS_ATTENTION' | 'PENDING';
+  cin?: string;
+  ownershipPct?: number;
+  consolidationMethod?: string;
+  inBoundary?: boolean;
+  isFilingEntity?: boolean;
   children?: Organisation[];
 }
 
@@ -71,6 +95,10 @@ export interface Indicator {
   aggregationType: 'SUM' | 'AVERAGE' | 'COUNT' | 'RATIO' | 'LATEST';
   isMandatory: boolean;
   requiresEvidence: boolean;
+  ownerRole?: RoleType;
+  levelOfEntry?: 'PROJECT' | 'SUBSIDIARY' | 'GROUP';
+  mandatoryProof?: boolean;
+  frequency?: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   validationRule?: {
     min?: number;
     max?: number;
@@ -84,9 +112,15 @@ export interface Indicator {
 export type EntryStatus = 
   | 'DRAFT'
   | 'SUBMITTED'
+  | 'PROJECT_APPROVED'
+  | 'BU_APPROVED'
+  | 'SUBSIDIARY_APPROVED'
+  | 'GROUP_APPROVED'
+  | 'LOCKED'
+  | 'REJECTED'
+  // Legacy aliases
   | 'UNDER_REVIEW'
-  | 'APPROVED'
-  | 'REJECTED';
+  | 'APPROVED';
 
 export interface DataEntry {
   id: string;
@@ -105,6 +139,9 @@ export interface DataEntry {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  rejectionComment?: string | null;
+  reviewedBy?: string | null;
+  lockedAt?: string | null;
   // Computed fields for display
   indicator?: Indicator;
   organisation?: Organisation;
@@ -131,7 +168,7 @@ export interface Evidence {
 export interface ApprovalAction {
   id: string;
   dataEntryId: string;
-  action: 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_CORRECTION';
+  action: 'SUBMIT' | 'APPROVE' | 'REJECT' | 'REQUEST_CORRECTION' | 'LOCK' | 'UNLOCK';
   actionBy: string;
   actionByName: string;
   comments: string;
@@ -145,7 +182,7 @@ export interface AuditLog {
   indicatorCode?: string;
   indicatorName?: string;
   organisationName?: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'TRANSITION';
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'TRANSITION' | 'APPROVE' | 'LOCK' | 'REJECT' | 'UNLOCK';
   oldValue?: any;
   newValue?: any;
   changedBy: string;
@@ -177,23 +214,38 @@ export interface DashboardSummary {
   pendingReviewProjects: number;
   overallReadinessPercent: number;
   brsrCoreReadinessPercent: number;
+  governanceAdherencePercent?: number;
   sectionAReadiness: number;
   sectionBReadiness: number;
   sectionCReadiness: number;
+  turnoverCr?: number;
+  turnoverMUsdPPP?: number;
   environmentalSummary: {
     energyConsumptionGJ: number;
     renewableEnergyPercent: number;
     scope1GHG_tCO2e: number;
     scope2GHG_tCO2e: number;
+    scope3GHG_tCO2e?: number;
+    totalGHG_tCO2e?: number;
+    ghgIntensityPerCrore?: number;
+    ghgIntensityPPP?: number;
     waterConsumptionKL: number;
+    waterIntensityKL?: number;
     wasteGeneratedMT: number;
     wasteRecycledPercent: number;
   };
   socialSummary: {
     totalWorkforce: number;
+    contractualWorkforce?: number;
     femaleRepresentationPercent: number;
+    femaleExecPercent?: number;
+    wageParityRatio?: string;
     permanentEmployees: number;
     safetyIncidentsCount: number;
+    ltifr?: number;
+    fatalities?: number;
+    lostTimeInjuries?: number;
+    highConsequenceInjuries?: number;
     trainingHoursPerEmployee: number;
     wellbeingCoveragePercent: number;
   };
@@ -202,12 +254,31 @@ export interface DashboardSummary {
     grievancesResolvedPercent: number;
     msmeProcurementPercent: number;
     dataBreachesCount: number;
+    ethicsComplaintsCount?: number;
+    antiCorruptionCoveragePercent?: number;
+    regulatoryFines?: number;
+  };
+  dataQualitySummary?: {
+    measuredPercent: number;
+    estimatedPercent: number;
+    evidenceCoveragePercent: number;
+    assuranceStatus: string;
+    assurerName: string;
+    assuranceStage: string;
+    openFindingsCount: number;
+  };
+  workflowSummary?: {
+    draft: number;
+    submitted: number;
+    approved: number;
+    locked: number;
   };
   yoyTrends: {
     year: string;
     energyGJ: number;
     waterKL: number;
     ghgScope1_2: number;
+    scope3_tco2e?: number;
     wasteMT: number;
   }[];
 }

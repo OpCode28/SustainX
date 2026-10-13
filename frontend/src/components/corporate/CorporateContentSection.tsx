@@ -1,4 +1,5 @@
 import React from 'react';
+import { ShieldCheck } from 'lucide-react';
 
 export const CorporateContentSection: React.FC = () => {
   return (
@@ -21,12 +22,12 @@ export const CorporateContentSection: React.FC = () => {
               </p>
             </div>
 
-            {/* Supporting Photo — Flat layout, no cards, no shadows, no rounded corners */}
+            {/* Supporting Photo — Heavy Construction & Metro/Tunnel Viaduct Project */}
             <div className="pt-4">
               <img
-                src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1400&q=80"
-                alt="MEIL Heavy Industrial Engineering Operations and Fabrication"
-                className="w-full h-[280px] sm:h-[360px] object-cover object-center block border border-[#E8E8E8]"
+                src="/construction.jpg"
+                alt="MEIL Heavy Construction, Elevated Viaduct and Tunnel Boring Infrastructure"
+                className="w-full h-[280px] sm:h-[360px] object-cover object-center block border border-[#E8E8E8] shadow-sm"
                 loading="lazy"
               />
             </div>
@@ -91,19 +92,25 @@ export const CorporateContentSection: React.FC = () => {
               </ul>
             </div>
 
-            {/* Quick ESG & Sustainability Callout in MEIL Style */}
-            <div className="mt-6 p-5 border border-[#1A2A6C] bg-white text-[#333333]">
-              <h3 className="text-[17px] font-bold text-[#1A2A6C] mb-2">
-                ESG &amp; Sustainability Portal
-              </h3>
+            {/* Quick ESG & Sustainability Callout in MEIL OneSource Style */}
+            <div className="mt-6 p-5 border border-[#1A2A6C] bg-white text-[#333333] shadow-sm">
+              <div className="flex items-center space-x-2 mb-2">
+                <ShieldCheck className="w-5 h-5 text-[#EF272E]" />
+                <h3 className="text-[17px] font-bold text-[#1A2A6C]">
+                  MEIL OneSource
+                </h3>
+              </div>
+              <p className="text-[13px] text-[#EF272E] font-semibold mb-1">
+                Central Source for ESG and BRSR Reporting Ease
+              </p>
               <p className="text-[13px] text-[#444444] leading-[1.6] mb-3">
                 Access official SEBI BRSR Core disclosures, carbon emission registries, and project-level traceability across all 250+ project sites.
               </p>
               <a
                 href="/dashboard"
-                className="inline-block bg-[#1A2A6C] hover:bg-[#EF272E] text-white font-bold text-[13px] px-4 py-2 transition-colors"
+                className="inline-block bg-[#1A2A6C] hover:bg-[#EF272E] text-white font-bold text-[13px] px-4 py-2 transition-colors shadow-2xs"
               >
-                Launch BRSR Reporting System →
+                Launch MEIL OneSource Portal →
               </a>
             </div>
           </div>

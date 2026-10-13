@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEIL OneSource — Unified ESG & BRSR Reporting Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --navy: #313490;
+      --navy-dark: #222569;
+      --navy-card: #2B2E83;
+      --navy-light: #EEF1F9;
+      --navy-border: #C6CBEA;
+      --red: #E91029;
+      --red-light: #FFF0F2;
+      --red-border: #FFCDD2;
+      --charcoal: #333333;
+      --gray-muted: #555555;
+      --gray-light: #F7F8FA;
+      --gray-border: #E8E8E8;
+      --white: #FFFFFF;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #FFFFFF;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--charcoal);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .canvas-wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 24px 14px 24px;
+      background: #FFFFFF;
+    }
+
+    /* TOP HEADER */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--gray-border);
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .meil-logo-badge {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 22px;
+      font-weight: 900;
+      padding: 5px 16px;
+      border-radius: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .header-titles h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--navy);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .header-titles p {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--gray-muted);
+      margin-top: 2px;
+      letter-spacing: 0.2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-capsule {
+      background: var(--navy-light);
+      border: 1.5px solid var(--navy-border);
+      color: var(--navy);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* RETURN CORRECTION BANNER */
+    .return-banner {
+      height: 28px;
+      margin: 8px 0 6px 0;
+      background: var(--red-light);
+      border: 1.5px dashed var(--red);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--red);
+      flex-shrink: 0;
+    }
+
+    .return-banner svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* MAIN STAGES GRID: 6 COLUMNS FITTING 100% OF WIDTH */
+    .stages-layout {
+      display: grid;
+      grid-template-columns: 1fr 16px 1.05fr 16px 1.1fr 16px 1.1fr 16px 1.25fr 16px 1.15fr;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+      gap: 0;
+      margin-bottom: 10px;
+    }
+
+    /* STAGE CARD CONTAINER */
+    .stage-card {
+      background: var(--white);
+      border: 2px solid var(--gray-border);
+      border-radius: 9px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .stage-card.prominent {
+      border-color: var(--navy);
+      box-shadow: 0 4px 12px rgba(49, 52, 144, 0.08);
+    }
+
+    .stage-card.navy-output {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: var(--white);
+    }
+
+    /* CARD HEADER */
+    .card-header {
+      padding: 9px 11px 7px 11px;
+      border-bottom: 1.5px solid var(--gray-border);
+      background: #FAFAFC;
+      flex-shrink: 0;
+    }
+
+    .navy-output .card-header {
+      background: var(--navy-dark);
+      border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .stage-pill {
+      display: inline-block;
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+
+    .navy-output .stage-pill {
+      color: #A5B4FC;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .navy-output .card-title {
+      color: var(--white);
+    }
+
+    .card-subtitle {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-muted);
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
+    .navy-output .card-subtitle {
+      color: #D1D5DB;
+    }
+
+    /* CARD BODY */
+    .card-body {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    /* COMPONENT BOX ITEM */
+    .comp-item {
+      background: var(--white);
+      border: 1.5px solid #DFE2EA;
+      border-radius: 6px;
+      padding: 7px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--charcoal);
+      line-height: 1.2;
+    }
+
+    .comp-item.navy-border {
+      border-left: 3.5px solid var(--navy);
+      background: #FBFBFE;
+    }
+
+    .comp-item.red-border {
+      border-left: 3.5px solid var(--red);
+      background: #FEF9F9;
+    }
+
+    .navy-output .comp-item {
+      background: var(--navy-card);
+      border: 1.5px solid #4447A0;
+      color: var(--white);
+    }
+
+    .navy-output .comp-item.dash-highlight {
+      border-left: 3.5px solid #F87171;
+      background: #363991;
+    }
+
+    .icon-svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      color: var(--navy);
+    }
+
+    .navy-output .icon-svg {
+      color: #CBD5E1;
+    }
+
+    .comp-text {
+      flex: 1;
+      line-height: 1.2;
+    }
+
+    /* CARD FOOTER */
+    .card-footer {
+      padding: 7px 10px;
+      background: var(--gray-light);
+      border-top: 1.5px solid var(--gray-border);
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--navy);
+      text-align: center;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .navy-output .card-footer {
+      background: var(--navy-dark);
+      border-top: 1.5px solid rgba(255, 255, 255, 0.15);
+      color: #E0E7FF;
+    }
+
+    /* CONNECTOR COLUMN WITH ARROWS */
+    .arrow-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .arrow-svg {
+      width: 16px;
+      height: 16px;
+      color: var(--navy);
+    }
+
+    /* STAGE 4 AUDIT CONNECTION */
+    .audit-link-box {
+      margin-top: auto;
+      background: var(--red-light);
+      border: 1.5px solid var(--red);
+      border-radius: 5px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--red);
+      white-space: nowrap;
+    }
+
+    /* STAGE 5 FIVE GATES */
+    .gates-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .gate-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 8px;
+      background: #F8F9FD;
+      border: 1.5px solid #D6DCE9;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--charcoal);
+    }
+
+    .gate-idx {
+      width: 18px;
+      height: 18px;
+      background: var(--navy);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .gate-row.final-gate {
+      background: #FDF2F2;
+      border-color: var(--red);
+    }
+
+    .gate-row.final-gate .gate-idx {
+      background: var(--red);
+    }
+
+    .gate-arrow-sub {
+      text-align: center;
+      font-size: 8px;
+      color: var(--navy);
+      margin: -3px 0;
+      font-weight: 900;
+    }
+
+    .gate-notice {
+      background: #F1F4FA;
+      border: 1px dashed var(--navy-border);
+      border-radius: 5px;
+      padding: 5px 6px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+
+    /* FOOTER & HIERARCHY */
+    .footer-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .hierarchy-strip {
+      background: #F2F4F9;
+      border: 1.5px solid #D1D6E8;
+      border-radius: 7px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hierarchy-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hierarchy-path {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .h-node {
+      background: var(--white);
+      border: 1.5px solid #C5CDE3;
+      padding: 3px 10px;
+      border-radius: 5px;
+      color: var(--charcoal);
+    }
+
+    .h-node.terminal {
+      background: var(--navy);
+      color: var(--white);
+      border-color: var(--navy);
+    }
+
+    .h-sep {
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .hierarchy-note {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-muted);
+    }
+
+    .outcome-statement {
+      text-align: center;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="canvas-wrapper">
+
+    <!-- TOP HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <div class="meil-logo-badge">MEIL</div>
+        <div class="header-titles">
+          <h1>MEIL OneSource</h1>
+          <p>Centralized ESG Data • Controlled Approvals • Traceable BRSR Reporting</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="badge-capsule">Unified ESG & BRSR Reporting Platform</div>
+        <div class="badge-capsule" style="background: #FDF2F2; border-color: var(--red-border); color: var(--red);">National Hackathon Project</div>
+      </div>
+    </header>
+
+    <!-- RETURN CORRECTION BANNER -->
+    <div class="return-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 14L4 9l5-5"/>
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+      </svg>
+      <span>Correction / Resubmission: Rejected or Flagged Records Return from Review Stages to Data Entry</span>
+    </div>
+
+    <!-- MAIN 6 STAGES FROM LEFT TO RIGHT -->
+    <main class="stages-layout">
+
+      <!-- STAGE 1: DATA SOURCES -->
+      <section class="stage-card">
+        <div class="card-header">
+          <div class="stage-pill">Stage 1 · Data Sources</div>
+          <div class="card-title">Project & Business Teams</div>
+          <div class="card-subtitle">Enter ESG and BRSR data.</div>
+        </div>
+        <div class="card-body">
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="comp-text">Project / Site Engineer</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="comp-text">EHS / Safety Team</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11"/></svg>
+            <span class="comp-text">Business Unit / ESG Team</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="comp-text">Corporate / Finance Team</span>
+          </div>
+        </div>
+        <div class="card-footer">Site & Operations Sources</div>
+      </section>
+
+      <!-- ARROW 1 -> 2 -->
+      <div class="arrow-col">
+        <svg class="arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <!-- STAGE 2: APPLICATION LAYER -->
+      <section class="stage-card prominent">
+        <div class="card-header">
+          <div class="stage-pill">Stage 2 · Application Layer</div>
+          <div class="card-title">MEIL OneSource Web Portal</div>
+          <div class="card-subtitle">Secure role-based interaction.</div>
+        </div>
+        <div class="card-body">
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+            <span class="comp-text">ESG Data Entry Forms</span>
+          </div>
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span class="comp-text">Role-Based Access Control</span>
+          </div>
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span class="comp-text">BRSR Indicator Management</span>
+          </div>
+        </div>
+        <div class="card-footer">React · Vite · TypeScript</div>
+      </section>
+
+      <!-- ARROW 2 -> 3 -->
+      <div class="arrow-col">
+        <svg class="arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <!-- STAGE 3: PROCESSING & VALIDATION -->
+      <section class="stage-card">
+        <div class="card-header">
+          <div class="stage-pill">Stage 3 · Backend Engine</div>
+          <div class="card-title">ESG Processing Engine</div>
+          <div class="card-subtitle">Check data before review.</div>
+        </div>
+        <div class="card-body">
+          <div class="comp-item red-border">
+            <svg class="icon-svg" style="color: var(--red);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span class="comp-text">Data Validation</span>
+          </div>
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
+            <span class="comp-text">Scope 1, 2 & 3 Calculations</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span class="comp-text">Evidence Attachment</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="comp-text">Indicator Completeness Checks</span>
+          </div>
+        </div>
+        <div class="card-footer">Automated Validation Rules</div>
+      </section>
+
+      <!-- ARROW 3 -> 4 -->
+      <div class="arrow-col">
+        <svg class="arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <!-- STAGE 4: DATABASE & AUDIT LAYER -->
+      <section class="stage-card">
+        <div class="card-header">
+          <div class="stage-pill">Stage 4 · Persistence</div>
+          <div class="card-title">Data & Audit Layer</div>
+          <div class="card-subtitle">Activity & audit log storage.</div>
+        </div>
+        <div class="card-body">
+          <div class="comp-item navy-border">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span class="comp-text">PostgreSQL Database</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="comp-text">ESG Activity Records</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="comp-text">Evidence References</span>
+          </div>
+          <div class="comp-item red-border">
+            <svg class="icon-svg" style="color: var(--red);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            <span class="comp-text">Approval History & Audit Logs</span>
+          </div>
+          <div class="audit-link-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Immutable Audit Log Link</span>
+          </div>
+        </div>
+        <div class="card-footer">PostgreSQL · Drizzle ORM</div>
+      </section>
+
+      <!-- ARROW 4 -> 5 -->
+      <div class="arrow-col">
+        <svg class="arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <!-- STAGE 5: REVIEW & APPROVAL -->
+      <section class="stage-card">
+        <div class="card-header">
+          <div class="stage-pill" style="color: var(--red);">Stage 5 · Governance</div>
+          <div class="card-title">Five-Gate Review & Approval</div>
+          <div class="card-subtitle">Sequential role-based verification.</div>
+        </div>
+        <div class="card-body">
+          <div class="gates-stack">
+            <div class="gate-row">
+              <div class="gate-idx">1</div>
+              <span class="comp-text">Project Manager</span>
+            </div>
+            <div class="gate-arrow-sub">▼</div>
+            <div class="gate-row">
+              <div class="gate-idx">2</div>
+              <span class="comp-text">Business Unit Coordinator</span>
+            </div>
+            <div class="gate-arrow-sub">▼</div>
+            <div class="gate-row">
+              <div class="gate-idx">3</div>
+              <span class="comp-text">Subsidiary ESG Manager</span>
+            </div>
+            <div class="gate-arrow-sub">▼</div>
+            <div class="gate-row">
+              <div class="gate-idx">4</div>
+              <span class="comp-text">Group ESG Head / CSO</span>
+            </div>
+            <div class="gate-arrow-sub">▼</div>
+            <div class="gate-row final-gate">
+              <div class="gate-idx">5</div>
+              <span class="comp-text">Board Approver</span>
+            </div>
+          </div>
+          <div class="gate-notice">
+            Approved records contribute to consolidated reporting.
+          </div>
+        </div>
+        <div class="card-footer">Role-Based Gate Assurance</div>
+      </section>
+
+      <!-- ARROW 5 -> 6 -->
+      <div class="arrow-col">
+        <svg class="arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </div>
+
+      <!-- STAGE 6: REPORTING OUTPUTS -->
+      <section class="stage-card navy-output">
+        <div class="card-header">
+          <div class="stage-pill">Stage 6 · Disclosures</div>
+          <div class="card-title">Consolidated ESG & BRSR Reporting</div>
+          <div class="card-subtitle">Group disclosures & metrics.</div>
+        </div>
+        <div class="card-body">
+          <div class="comp-item dash-highlight">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span class="comp-text">Group-Level ESG Dashboard</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <span class="comp-text">BRSR Core Indicators</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            <span class="comp-text">GHG & Resource Metrics</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="comp-text">Evidence-Linked Reporting</span>
+          </div>
+          <div class="comp-item">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="comp-text">Completeness & Actions</span>
+          </div>
+        </div>
+        <div class="card-footer">SEBI BRSR Disclosures</div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM ORGANIZATIONAL HIERARCHY STRIP & OUTCOME -->
+    <footer class="footer-wrapper">
+      <div class="hierarchy-strip">
+        <div class="hierarchy-label">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Organizational Hierarchy:</span>
+        </div>
+        <div class="hierarchy-path">
+          <div class="h-node">Project / Site</div>
+          <div class="h-sep">➔</div>
+          <div class="h-node">Business Unit</div>
+          <div class="h-sep">➔</div>
+          <div class="h-node">Subsidiary</div>
+          <div class="h-sep">➔</div>
+          <div class="h-node terminal">MEIL Group</div>
+        </div>
+        <div class="hierarchy-note">
+          Approved data is consolidated upward through the organizational hierarchy.
+        </div>
+      </div>
+
+      <div class="outcome-statement">
+        From Project-Level Data to Traceable Group-Level Reporting
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

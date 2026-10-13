@@ -3,12 +3,15 @@ import {
   SlidersHorizontal, 
   Search, 
   ShieldCheck, 
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import { INDICATORS } from '../data/demoData';
 import { Indicator } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export const IndicatorsRegistryPage: React.FC = () => {
+  const { currentRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
@@ -45,11 +48,36 @@ export const IndicatorsRegistryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          {currentRole !== 'ADMIN' ? (
+            <span className="px-3 py-1.5 bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] text-xs font-bold flex items-center space-x-1.5">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Read-Only Oversight</span>
+            </span>
+          ) : (
+            <button className="bg-[#1A2A6C] hover:bg-[#EF272E] text-white px-3 py-1.5 text-xs font-bold transition-colors">
+              + New Indicator
+            </button>
+          )}
           <span className="px-3 py-1.5 bg-[#E8E8E8] text-[#1A2A6C] border border-[#d1d5db] text-xs font-bold">
             {INDICATORS.length} Configured Indicators
           </span>
         </div>
       </div>
+
+      {/* Role Notice for CSO */}
+      {currentRole !== 'ADMIN' && (
+        <div className="bg-[#f0f9ff] border-l-4 border-[#0284c7] p-3 text-xs text-[#0369a1] flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-[#0284c7] shrink-0" />
+            <span>
+              <strong>Statutory Indicator Master (Read-Only):</strong> SEBI BRSR Core attribute formulas, emission factors, and validation rules are centrally locked. As CSO, you have full analytical visibility; schema and indicator modifications require System Administrator privileges.
+            </span>
+          </div>
+          <span className="text-[10px] uppercase font-bold bg-[#e0f2fe] text-[#0284c7] px-2 py-0.5 border border-[#bae6fd] shrink-0">
+            Read-Only
+          </span>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fafafa] p-3 border border-[#E8E8E8]">

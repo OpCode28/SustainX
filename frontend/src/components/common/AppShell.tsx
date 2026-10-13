@@ -20,12 +20,13 @@ export const AppShell: React.FC = () => {
     else if (path.includes('audit-trail')) pageName = 'Audit Trail';
     else if (path.includes('reports')) pageName = 'Reports & Disclosures';
     else if (path.includes('indicators')) pageName = 'Indicator Registry';
+    else if (path.includes('brsr-core')) pageName = 'BRSR Core & Scope 2 Engine';
     else if (path.includes('organisation')) pageName = 'Organisation Tree';
     else if (path.includes('settings')) pageName = 'Settings';
 
     return (
       <div className="bg-[#fafafa] border-b border-[#E8E8E8] px-6 py-2 text-xs text-[#666666] flex items-center space-x-1.5 select-none">
-        <span className="font-bold text-[#1A2A6C]">MEIL ESG</span>
+        <span className="font-semibold text-[#1A2A6C]">Home</span>
         <span>/</span>
         <span className="font-medium text-[#444444]">{selectedOrg.name}</span>
         <span>/</span>

@@ -1,0 +1,78 @@
+name: SustainX CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-build:
+    name: Build, Lint & PostgreSQL 17 Migration Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword123
+          POSTGRES_DB: sustainx_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @brsr/shared
+        run: pnpm --filter @brsr/shared build
+
+      - name: Drizzle Kit Generate & Schema Check
+        run: pnpm --filter @brsr/db db:generate
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword123@localhost:5432/sustainx_db
+
+      - name: Apply Migrations & Seed to PostgreSQL 17
+        run: |
+          pnpm --filter @brsr/db db:seed
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword123@localhost:5432/sustainx_db
+
+      - name: Build Backend API
+        run: pnpm --filter @brsr/api build
+
+      - name: Build Frontend Application
+        run: pnpm --filter frontend build

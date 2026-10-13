@@ -276,7 +276,7 @@ export const ReportsPage: React.FC = () => {
 
             {/* Modal Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-[#E8E8E8]">
-              <span className="text-xs text-[#888888]">Generated from validated MEIL ESG repository</span>
+              <span className="text-xs text-[#888888]">Generated from validated MEIL OneSource statutory repository</span>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setShowPreviewModal(false)}

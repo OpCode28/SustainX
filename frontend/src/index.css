@@ -3,9 +3,67 @@
 @tailwind utilities;
 
 @layer base {
+  /* Type Scale using rem */
+  :root {
+    --font-page-title: clamp(1.25rem, 2.5vw, 1.5rem); /* 20px - 24px */
+    --font-field-title: 1.125rem; /* 18px */
+    --font-body: 1rem; /* 16px */
+    --font-label: 0.875rem; /* 14px */
+    --font-helper: 0.8125rem; /* 13px minimum helper/meta */
+  }
+
   body {
     @apply bg-white text-[#333333] antialiased font-sans;
+    font-size: 1rem; /* 16px default */
+    line-height: 1.5;
   }
+
+  /* Form inputs text minimum 16px to prevent mobile zoom and ensure legibility */
+  input, select, textarea {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.4;
+  }
+
+  /* Enforce no text below 12px anywhere */
+  * {
+    min-font-size: 12px;
+  }
+}
+
+/* Typography Utility Classes */
+.text-page-title {
+  font-size: var(--font-page-title);
+  line-height: 1.25;
+}
+
+.text-field-title {
+  font-size: var(--font-field-title);
+  line-height: 1.35;
+}
+
+.text-body-base {
+  font-size: var(--font-body);
+}
+
+.text-label-base {
+  font-size: var(--font-label);
+}
+
+.text-helper-meta {
+  font-size: var(--font-helper);
+}
+
+/* Dashboard Text Overflow & Responsive Clamp Helpers */
+.clamp-title {
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+.clamp-kpi-val {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.clamp-kpi-sub {
+  font-size: clamp(0.8125rem, 1.2vw, 0.875rem);
 }
 
 /* Custom subtle scrollbars */
