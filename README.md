@@ -550,4 +550,13 @@ To verify the platform's functionality:
 
 ---
 
+## 👥 Contributors & Core Team
+
+- **Biswaranjan Sahoo** ([@sharp-biswa](https://github.com/sharp-biswa)) — *Lead System Architect & Full-Stack Developer*
+  - Complete architecture, SEBI BRSR Core statutory calculation engine, 5-gate maker-checker governance, and national hackathon implementation.
+
+Detailed contributor records and technical ownership are documented in [CONTRIBUTORS.md](CONTRIBUTORS.md).
+
+---
+
 *Megha Engineering & Infrastructures Limited (MEIL) — MEIL OneSource: Central Source for ESG and BRSR Reporting Ease*
