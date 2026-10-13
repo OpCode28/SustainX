@@ -555,6 +555,9 @@ To verify the platform's functionality:
 - **Biswaranjan Sahoo** ([@sharp-biswa](https://github.com/sharp-biswa)) — *Lead System Architect & Full-Stack Developer*
   - Complete architecture, SEBI BRSR Core statutory calculation engine, 5-gate maker-checker governance, and national hackathon implementation.
 
+- **Soumitro Ghosh** ([@soumitroghosh035-design](https://github.com/soumitroghosh035-design)) — *Lead UI/UX Designer & Frontend Engineer*
+  - Enterprise design system, official MEIL branding (#313490 & #E91029), Executive ESG Cockpit dashboard, architecture infographics, and responsive user experience.
+
 Detailed contributor records and technical ownership are documented in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ---

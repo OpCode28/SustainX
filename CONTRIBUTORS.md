@@ -2,7 +2,8 @@
 
 ## MEIL OneSource — Unified ESG & BRSR Reporting Platform
 
-### Core Maintainer & Lead Contributor
+### Core Maintainers & Lead Contributors
+
 - **Biswaranjan Sahoo** ([@sharp-biswa](https://github.com/sharp-biswa))
   - **Role:** Lead Architect & Full-Stack Developer
   - **Key Contributions:**
@@ -11,7 +12,16 @@
     - 5-Gate Review & Approval maker-checker governance workflow.
     - Multi-tenant organization hierarchy tree (Group → Subsidiary → Business Unit → Project Sites).
     - Immutable cryptographic audit trail implementation.
-    - Corporate UI design, Executive ESG cockpit, and Hackathon presentation assets.
+    - Executive ESG cockpit, API integration specifications, and Hackathon presentation assets.
+
+- **Soumitro Ghosh** ([@soumitroghosh035-design](https://github.com/soumitroghosh035-design))
+  - **Role:** Lead UI/UX Designer & Frontend Engineer
+  - **Key Contributions:**
+    - Enterprise corporate design system with official MEIL brand colors (`#313490` and `#E91029`).
+    - High-density Executive ESG Dashboard and Site Engineer Operational Cockpit UI.
+    - Interactive 6-stage system architecture infographic and visual presentation deck.
+    - Responsive multi-tier governance workflows and Maker-Checker review interfaces.
+    - User experience optimization, component design, and hackathon visual assets.
 
 ---
 
