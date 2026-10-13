@@ -60,14 +60,15 @@ jobs:
       - name: Build @brsr/shared
         run: pnpm --filter @brsr/shared build
 
-      - name: Drizzle Kit Generate & Schema Check
-        run: pnpm --filter @brsr/db db:generate
+      - name: Drizzle Kit Generate & Push Schema to PostgreSQL 17
+        run: |
+          pnpm --filter @brsr/db db:generate
+          pnpm --filter @brsr/db db:push -- --force
         env:
           DATABASE_URL: postgresql://postgres:testpassword123@localhost:5432/sustainx_db
 
       - name: Apply Migrations & Seed to PostgreSQL 17
-        run: |
-          pnpm --filter @brsr/db db:seed
+        run: pnpm --filter @brsr/db db:seed
         env:
           DATABASE_URL: postgresql://postgres:testpassword123@localhost:5432/sustainx_db
 

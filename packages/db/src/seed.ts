@@ -18,7 +18,34 @@ import * as path from 'path';
 async function seed() {
   console.log('🌱 Starting MEIL ESG database seeding in PostgreSQL 17 (Phase 1: Roles & Tree)...');
 
-  // 0. RUN SCHEMA MIGRATIONS / ALTERATIONS
+  // 0. Ensure base tables exist from 0000 migration if running on a fresh database
+  try {
+    const tableCheck = await sqlClient`
+      SELECT to_regclass('public.users') as has_users;
+    `;
+    if (!tableCheck[0]?.has_users) {
+      console.log('📦 Clean database detected. Initializing base schema from 0000 migration...');
+      const initSqlPath = path.resolve(__dirname, '../drizzle/0000_lame_layla_miller.sql');
+      if (fs.existsSync(initSqlPath)) {
+        const initSql = fs.readFileSync(initSqlPath, 'utf-8');
+        const statements = initSql.split('--> statement-breakpoint');
+        for (const stmt of statements) {
+          const trimmed = stmt.trim();
+          if (trimmed) {
+            try {
+              await sqlClient.unsafe(trimmed);
+            } catch (e: any) {
+              // Ignore if already created
+            }
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('Initial schema check notice:', err.message);
+  }
+
+  // 0.1 RUN SCHEMA MIGRATIONS / ALTERATIONS
   console.log('📦 Applying table structural migrations for BRSR Roles & Governance...');
   await sqlClient.unsafe(`
     -- Add columns to users if missing
